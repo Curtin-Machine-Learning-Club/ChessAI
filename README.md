@@ -1,2 +1,3 @@
 # ChessAI
-Building an AI to play Chess
+
+Building an AI to play Chess!

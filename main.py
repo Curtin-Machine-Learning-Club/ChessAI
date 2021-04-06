@@ -1,83 +1,71 @@
 import pygame
+import chess
 
-pieces = [ "empty", "king", "rook", "bishop", "queen", "knight", "pawn" ]
-board = [
-    [ 2, 5, 3, 4, 1, 3, 5, 2 ],
-    [ 6, 6, 6, 6, 6, 6, 6, 6 ],
-    [ 0, 0, 0, 0, 0, 0, 0, 0 ],
-    [ 0, 0, 0, 0, 0, 0, 0, 0 ],
-    [ 0, 0, 0, 0, 0, 0, 0, 0 ],
-    [ 0, 0, 0, 0, 0, 0, 0, 0 ],
-    [ 6, 6, 6, 6, 6, 6, 6, 6 ],
-    [ 2, 5, 3, 4, 1, 3, 5, 2 ],
-]
+board = chess.Board()
 
-activePiece = None
-
-def move_piece(start, end):
-    start_piece = board[start[0]][start[1]]
-    end_piece = board[end[0]][end[1]]
-
-    if end_piece != 0:
-        raise Exception("You can't move where a piece already is")
-
-    board[end[0]][end[1]] = start_piece
-    board[start[0]][start[1]] = 0
-    
-def print_board():
-    print("Board State:")
-    print(*board, sep='\n')
-
-
-# print_board()
-# move_piece([1, 0], [2, 0])
-# print_board()
-
+# Setup Pygame Window
 pygame.init()
-
-gameDisplay = pygame.display.set_mode((800,800))
-pygame.display.set_caption('Chess')
+screen = pygame.display.set_mode((800, 800))
+pygame.display.set_caption("Chess")
 clock = pygame.time.Clock()
-myfont = pygame.font.SysFont('Comic Sans MS', 30)
 
+# Color for UI
 WHITE = (255, 255, 255)
 GREY = (128, 128, 128)
 YELLOW = (204, 204, 0)
 BLUE = (50, 255, 255)
-BLACK = (0, 0, 0)
+GREEN = (0, 255, 0)
 
-CELL_SIZE = 100 # TODO: Derive from window
+# UI State
+highlightedPiece = None
+CELL_SIZE = screen.get_width() / len(board.state)
 CELL_PADDING = 3
 
-crashed = False
-while not crashed:
+# Game Loop
+running = True
+while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            crashed = True
+            running = False
+    
+    pos = pygame.mouse.get_pos()
+    leftClickActive, _, rightClickActive = pygame.mouse.get_pressed()
 
-        for i in range(0, 8):
-            for ii in range(0, 8):
+    if board.game_over:
+        highlightedPiece = None
+        pygame.draw.rect(screen, GREEN, (0, 0, screen.get_width(), 20))
+    else:
+        for i, y in enumerate(board.state):
+            for ii, x in enumerate(y):
+                # Board Background
                 color = WHITE
                 if ((i + ii) % 2) == 1:
                     color = GREY
-
-                if activePiece != None and i == activePiece[0] and ii == activePiece[1]:
+                
+                # Actively selected piece has blue background
+                if highlightedPiece != None and i == highlightedPiece[0] and ii == highlightedPiece[1]:
                     color = BLUE
 
-                squareRect = pygame.draw.rect(gameDisplay, color, (i*CELL_SIZE, ii * CELL_SIZE, CELL_SIZE - CELL_PADDING, CELL_SIZE - CELL_PADDING))
+                # If Actively selected piece can move to square set yellow
+                isValidMove = highlightedPiece != None and board.is_valid_move(highlightedPiece, [i, ii])
+                if isValidMove:
+                    color = YELLOW
+                
+                squareRect = pygame.draw.rect(screen, color, (i * CELL_SIZE, ii * CELL_SIZE, CELL_SIZE - CELL_PADDING, CELL_SIZE - CELL_PADDING))
 
-                textRect = None
-                pieceIndex = board[ii][i]
-                if pieceIndex != 0:
-                    textsurface = myfont.render(pieces[pieceIndex], False, (0, 0, 0))
-                    textRect = gameDisplay.blit(textsurface, (i*CELL_SIZE, ii * CELL_SIZE))
+                # Move if left click valid move
+                if leftClickActive and squareRect.collidepoint(pos) and isValidMove:
+                    board.move_piece(highlightedPiece, [i, ii])
+                    highlightedPiece = None
 
-                pos = pygame.mouse.get_pos()
-                pressed1, pressed2, pressed3 = pygame.mouse.get_pressed()
+                if x.piece != chess.ChessPiece.EMPTY:
+                    pieceRect = screen.blit(pygame.image.load("./assets/" + x.piece.name + "_" + x.color.name + ".png"), (i * CELL_SIZE, ii * CELL_SIZE))
+                    
+                    if leftClickActive and pieceRect.collidepoint(pos):
+                        highlightedPiece = [i, ii]
+                    elif rightClickActive:
+                        highlightedPiece = None
 
-                if pressed1 and (squareRect.collidepoint(pos) or (textRect != None and textRect.collidepoint(pos))):
-                    if board[ii][i] != 0:
-                        activePiece = [i, ii]
     pygame.display.update()
     clock.tick(60)
 
