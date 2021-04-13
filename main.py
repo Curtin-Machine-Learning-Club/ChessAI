@@ -18,6 +18,7 @@ GREEN = (0, 255, 0)
 
 # UI State
 highlightedPiece = None
+highlightedPieceValidMoves = None
 CELL_SIZE = screen.get_width() / len(board.state)
 CELL_PADDING = 3
 
@@ -33,6 +34,7 @@ while running:
 
     if board.game_over:
         highlightedPiece = None
+        highlightedPieceValidMoves = None
         pygame.draw.rect(screen, GREEN, (0, 0, screen.get_width(), 20))
     else:
         for i, y in enumerate(board.state):
@@ -47,7 +49,7 @@ while running:
                     color = BLUE
 
                 # If Actively selected piece can move to square set yellow
-                isValidMove = highlightedPiece != None and board.is_valid_move(highlightedPiece, [i, ii])
+                isValidMove = highlightedPiece != None and highlightedPieceValidMoves[i][ii]
                 if isValidMove:
                     color = YELLOW
                 
@@ -57,14 +59,17 @@ while running:
                 if leftClickActive and squareRect.collidepoint(pos) and isValidMove:
                     board.move_piece(highlightedPiece, [i, ii])
                     highlightedPiece = None
+                    highlightedPieceValidMoves = None
 
                 if x.piece != chess.ChessPiece.EMPTY:
                     pieceRect = screen.blit(pygame.image.load("./assets/" + x.piece.name + "_" + x.color.name + ".png"), (i * CELL_SIZE, ii * CELL_SIZE))
                     
                     if leftClickActive and pieceRect.collidepoint(pos):
                         highlightedPiece = [i, ii]
+                        highlightedPieceValidMoves = board.valid_moves(highlightedPiece)
                     elif rightClickActive:
                         highlightedPiece = None
+                        highlightedPieceValidMoves = None
 
     pygame.display.update()
     clock.tick(60)
