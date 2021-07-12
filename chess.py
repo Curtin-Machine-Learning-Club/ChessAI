@@ -23,9 +23,6 @@ class Piece:
         self.piece = piece
         self.color = color
 
-    def _moveX(self, y, x):
-        return (y + x) if self.color == Color.WHITE else (y - x)
-
 class Board:
     state = [
         [ Piece(ChessPiece.ROOK, Color.WHITE), Piece(ChessPiece.KNIGHT, Color.WHITE), Piece(ChessPiece.BISHOP, Color.WHITE), Piece(ChessPiece.KING, Color.WHITE), Piece(ChessPiece.QUEEN, Color.WHITE), Piece(ChessPiece.BISHOP, Color.WHITE), Piece(ChessPiece.KNIGHT, Color.WHITE), Piece(ChessPiece.ROOK, Color.WHITE) ],
@@ -55,8 +52,6 @@ class Board:
         piece = self.state[start[0]][start[1]]
         possible_moves = [ [ False for i in range(8) ] for i in range(8) ]
 
-        # TODO: Account for checkmate, check, stalemate when working out if you can move because you MUST get yourself out if in that state.
-
         if piece.piece == ChessPiece.PAWN:
             # TODO: En passant
 
@@ -64,246 +59,41 @@ class Board:
                  # TODO: Chess Special Move Called Promotion
                 print("Chess Promotion Case Reached!")
             else:
-                # Pawn can move forward one space (or two on first move)
-                possible_moves[piece._moveX(start[0], 1)][start[1]] = True
+                self.relativePossibleMove(possible_moves, start, piece, 1, 0) # Forward 1
                 if not piece.hasMoved:
-                    possible_moves[piece._moveX(start[0], 2)][start[1]] = True
-                
-                # If a piece is diagonally in front by one space can take it
-                if start[1]-1 >= 0:
-                    if self.state[piece._moveX(start[0], 1)][start[1]-1].piece != ChessPiece.EMPTY:
-                        possible_moves[piece._moveX(start[0], 1)][start[1]-1] = True
-                
-                if start[1]+1 <= 7:
-                    if self.state[piece._moveX(start[0], 1)][start[1]+1].piece != ChessPiece.EMPTY:
-                        possible_moves[piece._moveX(start[0], 1)][start[1]+1] = True
-        elif piece.piece == ChessPiece.KNIGHT:
-            # TODO: If possible move location has own piece in it, it's not a possible move!
+                    self.relativePossibleMove(possible_moves, start, piece, 2, 0) # Forward 2 on first move
+                self.relativePossibleMove(possible_moves, start, piece, 1, -1, True)  # Front Top
+                self.relativePossibleMove(possible_moves, start, piece, 1, 1, True)   # Front Bottom
 
-            if start[1]+1 <= 7:
-                # Bottom Right
-                if piece._moveX(start[0], 2) >= 0 and piece._moveX(start[0], 2) <= 7:
-                    possible_moves[piece._moveX(start[0], 2)][start[1]+1] = True
-
-                # Bottom Left
-                if piece._moveX(start[0], -2) >= 0 and piece._moveX(start[0], -2) <= 7:
-                    possible_moves[piece._moveX(start[0], -2)][start[1]+1] = True
-            
-            if start[1]+2 <= 7:
-                if start[0]+1 >= 0 and start[0]+1 <= 7:
-                    possible_moves[start[0]+1][start[1]+2] = True
-
-                if start[0]-1 >= 0 and start[0]-1 <= 7:
-                    possible_moves[start[0]-1][start[1]+2] = True
-
-            if start[1]-1 >= 0:
-                # Top Right
-                if piece._moveX(start[0], 2) >= 0 and piece._moveX(start[0], 2) <= 7:
-                    possible_moves[piece._moveX(start[0], 2)][start[1]-1] = True
-
-                # Top Left
-                if piece._moveX(start[0], -2) >= 0 and piece._moveX(start[0], -2) <= 7:
-                    possible_moves[piece._moveX(start[0], -2)][start[1]-1] = True
-
-            if start[1]-2 >= 0:
-                if start[0]+1 >= 0 and start[0]+1 <= 7:
-                    possible_moves[start[0]+1][start[1]-2] = True
-
-                if start[0]-1 >= 0 and start[0]-1 <= 7:
-                    possible_moves[start[0]-1][start[1]-2] = True
-        elif piece.piece == ChessPiece.KING:
-            # TODO: If possible move location has own piece in it, it's not a possible move!
-            # TODO: Label each case
+        if piece.piece == ChessPiece.KNIGHT:
+            self.relativePossibleMove(possible_moves, start, piece, 2, -1) # Top L
+            self.relativePossibleMove(possible_moves, start, piece, 2, 1) # Bottom L
+        
+        if piece.piece == ChessPiece.KING:
             # TODO: King can't get itself in check. Remove moves that would result in Check.
-            # TODO: Castling
+            # TODO: Castling -> At most once per game
+            self.relativePossibleMove(possible_moves, start, piece, 0, -1)  # Above
+            self.relativePossibleMove(possible_moves, start, piece, 0, 1)   # Below
+            self.relativePossibleMove(possible_moves, start, piece, 1, 0)   # Front
+            self.relativePossibleMove(possible_moves, start, piece, 1, -1)  # Front Top
+            self.relativePossibleMove(possible_moves, start, piece, 1, 1)   # Front Bottom
+            self.relativePossibleMove(possible_moves, start, piece, -1, 0)  # Behind
+            self.relativePossibleMove(possible_moves, start, piece, -1, 1)  # Behind Bottom
+            self.relativePossibleMove(possible_moves, start, piece, -1, -1) # Behind Top
 
-            if start[1]+1 <= 7:
-                possible_moves[start[0]][start[1]+1] = True
-
-                if piece._moveX(start[0], 1) >= 0 and piece._moveX(start[0], 1) <= 7:
-                    possible_moves[piece._moveX(start[0], 1)][start[1]+1] = True
-                    possible_moves[piece._moveX(start[0], 1)][start[1]] = True
-
-                if piece._moveX(start[0], -1) >= 0 and piece._moveX(start[0], -1) <= 7:
-                    possible_moves[piece._moveX(start[0], -1)][start[1]+1] = True
-                    possible_moves[piece._moveX(start[0], -1)][start[1]] = True
-
-            if start[1]-1 >= 0:
-                possible_moves[start[0]][start[1]-1] = True
-
-                if piece._moveX(start[0], 1) >= 0 and piece._moveX(start[0], 1) <= 7:
-                    possible_moves[piece._moveX(start[0], 1)][start[1]-1] = True
-                    possible_moves[piece._moveX(start[0], 1)][start[1]] = True
-
-                if piece._moveX(start[0], -1) >= 0 and piece._moveX(start[0], -1) <= 7:
-                    possible_moves[piece._moveX(start[0], -1)][start[1]-1] = True
-                    possible_moves[piece._moveX(start[0], -1)][start[1]] = True
-
-        # elif piece.piece == ChessPiece.QUEEN:
-            # TODO: Scanning diagonally, horizontally, or vertically
-
-        elif piece.piece == ChessPiece.ROOK:
-            # Scan left
-            for i in range(0, 7):
-                x = start[0]-(i+1)
-
-                # Hit edge
-                if x < 0:
-                    break
-
-                # Hit own piece so stop scanning
-                if self.state[x][start[1]].piece != ChessPiece.EMPTY and self.state[x][start[1]].color == piece.color:
-                    break
-
-                possible_moves[x][start[1]] = True
-
-                # Hit piece so stop
-                if self.state[x][start[1]].piece != ChessPiece.EMPTY:
-                    break
-
-            # Scan right
-            for i in range(0, 7):
-                x = start[0]+(i+1)
-
-                # Hit edge
-                if x > 7:
-                    break
-
-                # Hit own piece so stop scanning
-                if self.state[x][start[1]].piece != ChessPiece.EMPTY and self.state[x][start[1]].color == piece.color:
-                    break
-
-                possible_moves[x][start[1]] = True
-
-                # Hit piece so stop scanning
-                if self.state[x][start[1]].piece != ChessPiece.EMPTY:
-                    break
-
-            # Scan up
-            for i in range(0, 7):
-                y = start[1]-(i+1)
-
-                # Hit edge
-                if y < 0:
-                    break
-
-                # Hit own piece so stop scanning
-                if self.state[start[0]][y].piece != ChessPiece.EMPTY and self.state[start[0]][y].color == piece.color:
-                    break
-
-                possible_moves[start[0]][y] = True
-
-                # Hit piece so stop scanning
-                if self.state[start[0]][y].piece != ChessPiece.EMPTY:
-                    break
-            
-            # Scan down
-            for i in range(0, 7):
-                y = start[1]+(i+1)
-
-                # Hit edge
-                if y > 7:
-                    break
-
-                # Hit own piece so stop scanning
-                if self.state[start[0]][y].piece != ChessPiece.EMPTY and self.state[start[0]][y].color == piece.color:
-                    break
-
-                possible_moves[start[0]][y] = True
-
-                # Hit piece so stop scanning
-                if self.state[start[0]][y].piece != ChessPiece.EMPTY:
-                    break
-        elif piece.piece == ChessPiece.BISHOP:
-            # Scan down right
-            for i in range(0, 7):
-                x = start[0]+(i+1)
-                y = start[1]+(i+1)
-
-                # Hit edge
-                if x < 0 or x > 7 or y > 7:
-                    break
-
-                # Hit own piece so stop scanning
-                if self.state[x][y].piece != ChessPiece.EMPTY and self.state[x][y].color == piece.color:
-                    break
-
-                possible_moves[x][y] = True
-
-                # Hit piece so stop scanning
-                if self.state[x][y].piece != ChessPiece.EMPTY:
-                    break
-            
-            # Scan down left
-            for i in range(0, 7):
-                x = start[0]-(i+1)
-                y = start[1]+(i+1)
-
-                # Hit edge
-                if x < 0 or y > 7:
-                    break
-
-                # Hit own piece so stop scanning
-                if self.state[x][y].piece != ChessPiece.EMPTY and self.state[x][y].color == piece.color:
-                    break
-
-                possible_moves[x][y] = True
-
-                # Hit piece so stop scanning
-                if self.state[x][y].piece != ChessPiece.EMPTY:
-                    break
-            
-            # Scan up right
-            for i in range(0, 7):
-                x = start[0]+(i+1)
-                y = start[1]-(i+1)
-
-                # Hit edges
-                if x < 0 or x > 7 or y < 0:
-                    break
-
-                # Hit own piece so stop scanning
-                if self.state[x][y].piece != ChessPiece.EMPTY and self.state[x][y].color == piece.color:
-                    break
-
-                possible_moves[x][y] = True
-
-                # Hit piece so stop scanning
-                if self.state[x][y].piece != ChessPiece.EMPTY:
-                    break
-            
-            # Scan up left
-            for i in range(0, 7):
-                x = start[0]-(i+1)
-                y = start[1]-(i+1)
-
-                # Hit edges
-                if x < 0 or y < 0:
-                    break
-
-                # Hit own piece so stop scanning
-                if self.state[x][y].piece != ChessPiece.EMPTY and self.state[x][y].color == piece.color:
-                    break
-
-                possible_moves[x][y] = True
-
-                # Hit piece so stop scanning
-                if self.state[x][y].piece != ChessPiece.EMPTY:
-                    break
+        if piece.piece == ChessPiece.ROOK or piece.piece == ChessPiece.QUEEN:
+            self.relativePossibleMoveScanning(possible_moves, start, piece, 1, 0)  # Scan forward
+            self.relativePossibleMoveScanning(possible_moves, start, piece, -1, 0) # Scan backwards
+            self.relativePossibleMoveScanning(possible_moves, start, piece, 0, -1) # Scan up
+            self.relativePossibleMoveScanning(possible_moves, start, piece, 0, 1)  # Scan down
+        
+        if piece.piece == ChessPiece.BISHOP or piece.piece == ChessPiece.QUEEN:
+            self.relativePossibleMoveScanning(possible_moves, start, piece, 1, -1)  # Scan up forwards
+            self.relativePossibleMoveScanning(possible_moves, start, piece, 1, 1)   # Scan down forwards
+            self.relativePossibleMoveScanning(possible_moves, start, piece, -1, 1)  # Scan down backwards
+            self.relativePossibleMoveScanning(possible_moves, start, piece, -1, -1) # Scan up backwards
         
         return possible_moves
-
-    def isInCheck(self):
-        # TODO: When king threatened (but can escape). If in check only valid moves are to prevent check!
-        return False
-    
-    def isInCheckmate(self):
-        # TODO: when a king is placed in check and there is no legal move to escape
-        return False
-    
-    def isInStalemate(self):
-        # TODO: No possible moves and not in check
-        return False
 
     def print(self):
         for y in self.state:
@@ -311,13 +101,26 @@ class Board:
                 print(x.color.name[0] + " " +x.piece.name.ljust(6), end=', ')
             print()
         print()
-    
-    def print_possible_moves(self, start):
-        if isinstance(start, list) and len(start) != 2:
-            raise Exception("Invalid arguments to print_possible_moves")
-        
-        for y in range(8):
-            for x in range(8):
-                print(str(self.is_valid_move(start, [y, x])).ljust(5), end=', ')
-            print()
-        print()
+
+    def relativePossibleMove(self, possible_moves, start, piece, translateX, translateY, ignoreIfIntoEmpty=False):
+        endX = (start[0]+translateX) if piece.color == Color.WHITE else (start[0]-translateX)
+        endY = start[1]+translateY
+
+        if self.state[endX][endY].color != piece.color and (endX >= 0 and endX <= 7) and (endY >= 0 and endY <= 7):
+            if ignoreIfIntoEmpty and self.state[endX][endY].piece == ChessPiece.EMPTY:
+                return
+            possible_moves[endX][endY] = True
+
+    def relativePossibleMoveScanning(self, possible_moves, start, piece, changeTranslateX, changeTranslateY):
+        for i in range(0, 7):
+            x = start[0] + ((i + 1) * changeTranslateX)
+            y = start[1] + ((i + 1) * changeTranslateY)
+
+            if  (x >= 0 and x <= 7) and (y >= 0 and y <= 7):
+                if self.state[x][y].color == piece.color:
+                    break
+                
+                possible_moves[x][y] = True
+
+                if self.state[x][y].piece != ChessPiece.EMPTY:
+                    break
